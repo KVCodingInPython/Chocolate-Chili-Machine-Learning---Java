@@ -30,7 +30,7 @@ class GradientDescentCreator {
     }
 
     public static void datasetCreator() {
-        int[] x = new int[20];
+        int[] x = new int[21];
         boolean[][] y = new boolean[21][4];
 
         for (int i = 1; i < 21; i++) {
@@ -77,22 +77,54 @@ class GradientDescentCreator {
         }
         return weights;
     }
-    // Use softmax algorithm to initialise the values for 4 -20 chocolates remaining.
-    public static void softMaxAlgorithm()  {
+    // Use softmax algorithm to initialise the values for 4 -20 chocolates remaining. Takes a weight input, (3 x 1 vector, for each possible move), and exponentiates each input value and then normalises it, rounding it to either 0 or 1
+    public static double[][] softMaxAlgorithm(double[][] weights) {
+        double [][] weight_input = new double[4][1];
+        double [][] weight_output = new double[21][4];
+        for (int i = 4; i < weights.length; i++) {
+            weight_input[1][0] = weights[i][1];
+            weight_input[2][0] = weights[i][2];
+            weight_input[3][0] = weights[i][3];
+            double e_1 = Math.exp(weight_input[1][0]);
+            double e_2 = Math.exp(weight_input[2][0]);
+            double e_3 = Math.exp(weight_input[3][0]);
+            double sum = e_1 + e_2 + e_3;
+            weight_output[i][1] = Math.round(e_1 / sum);
+            weight_output[i][2] = Math.round(e_2 / sum);
+            weight_output[i][3] = Math.round(e_3 / sum);      
+
+            // Unit testing method calc
+            System.out.println(e_1 / sum);
+            System.out.println(e_2 / sum);
+            System.out.println(e_3 / sum); 
+        }
+        return weight_output;
+
+    } 
+    //
 
 
-    }
+
+
+
+    
 
 
 }
 
 public class ChocolateChiliGameGradientDescent {
-    public void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException {
         final int MAXCHOCOLATES = 20;
         StatesDatabase db = CreateStatesDatabase();
         StatesFileInput();
         ChocolateGame();
         StatesFileOutput(db);
+        GradientDescentCreator gradientDescent = new GradientDescentCreator();
+        GradientDescentCreator.datasetCreator();
+        double[][] weights = GradientDescentCreator.InitialiseWeights();
+        double[][] softmax_weights = GradientDescentCreator.softMaxAlgorithm(weights);
+
+        System.out.println(Arrays.deepToString(softmax_weights));
     }
     
     public static String ReadString(String message) {
@@ -148,7 +180,7 @@ public class ChocolateChiliGameGradientDescent {
         }
     }
     
-    public  void RepeatGames(int[] Games, int[] Winners, int chocolates) {
+    public static void RepeatGames(int[] Games, int[] Winners, int chocolates) {
         for (int i = 0; i < Games.length; i++) {
             Games[i] = i;
             Moves(chocolates, Winners);
@@ -177,7 +209,7 @@ public class ChocolateChiliGameGradientDescent {
         return chocolates;
     }
     
-    public int Moves(int chocolates, int[] Winners) {
+    public static int Moves(int chocolates, int[] Winners) {
         StatesDatabase db = CreateStatesDatabase();
         int turns = 0;
         int current = chocolates;
@@ -253,7 +285,7 @@ public class ChocolateChiliGameGradientDescent {
         read_states_file.close();
     }
     
-    public  StatesDatabase CreateStatesDatabase() {
+    public static  StatesDatabase CreateStatesDatabase() {
         int i;
         final int MAXCHOCOLATES = 20;
         StatesDatabase db = new StatesDatabase();
@@ -314,7 +346,7 @@ public class ChocolateChiliGameGradientDescent {
         return db;
     }
     
-    public  States CreateStates(boolean one, boolean two, boolean three) {
+    public static States CreateStates(boolean one, boolean two, boolean three) {
         States s = new States();
         s.eat_one_chocolate = one;
         s.eat_two_chocolates = two;
@@ -326,7 +358,7 @@ public class ChocolateChiliGameGradientDescent {
         return db.StatesDB[chocolates];
     }
     
-    public  void ChocolateGame() {
+    public static void ChocolateGame() {
         int chocolates = NumberOfChocolates();
         int[] Games = NumberOfGames();
         int[] Winners = Winners();
