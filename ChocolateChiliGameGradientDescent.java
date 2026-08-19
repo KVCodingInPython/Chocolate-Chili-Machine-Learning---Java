@@ -23,40 +23,62 @@ class StatesDatabase {
     States[] StatesDB;
 }
 
-public class ChocolateChiliGameGradientDescent {
+class GradientDescentCreator {
     public static void main(String[] args) {
         datasetCreator();
-
+        InitialiseWeights();
     }
 
     public static void datasetCreator() {
         int[] x = new int[20];
-        boolean[][] y = new boolean[20][3];
+        boolean[][] y = new boolean[21][4];
 
-        for (int i = 0; i < 20; i++) {
-            x[i] = i + 1;
+        for (int i = 1; i < 21; i++) {
+            x[i] = i;
             if ( i < 3) {
                 y[i][i] = true;
-                y[i][(i + 1) % 3] = false;
-                y[i][(i + 2) % 3] = false;
+                y[i][(i + 1) % 4] = false;
+                y[i][(i + 2) % 4] = false;
+                y[i][(i + 3) % 4] = false;
             }
             else {
                 y[i][0] = false;
                 y[i][1] = false;
-                y[i][2] = true;
+                y[i][2] = false;
+                y[i][3] = true;
             }
-                
-         
         }
-
         System.out.println(Arrays.toString(x));
         System.out.println(Arrays.deepToString(y));
+        return;
 
+    }
+    // [state][move] : state: 1 - 20, moves: 0 - 3, all inclusive
+    public static double[][] InitialiseWeights() {
+        double[][] weights = new double[21][4];
         
-        
-
-
-
+        for (int i = 1; i < 21; i++) {
+            if (i <= 3) {
+                weights[i][0] = 0.0;
+                weights[i][i] = 1.0;
+                weights[i][(i + 1) % 4] = 0.0;
+                weights[i][(i + 2) % 4] = 0.0;
+            }
+            else {
+                Random rand = new Random();
+                double rand1 = rand.nextDouble();
+                double rand2 = rand.nextDouble();
+                double rand3 = rand.nextDouble();
+                weights[i][0] = 0.0;
+                weights[i][1] = rand1;
+                weights[i][2] = rand2;
+                weights[i][3] = rand3;
+            }
+        }
+        return weights;
+    }
+    // Use softmax algorithm to initialise the values for 4 -20 chocolates remaining.
+    public static void softMaxAlgorithm()  {
 
 
     }
