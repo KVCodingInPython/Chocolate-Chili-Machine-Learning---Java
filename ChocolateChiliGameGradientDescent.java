@@ -24,10 +24,16 @@ class StatesDatabase {
 }
 
 class GradientDescentCreator {
-    public static void main(String[] args) {
+    double [][] weights;
+
+
+    GradientDescentCreator() {
         datasetCreator();
-        InitialiseWeights();
+        this.weights = this.InitialiseWeights();
     }
+
+    public static void main(String[] args) {
+    };
 
     public static void datasetCreator() {
         int[] x = new int[21];
@@ -78,7 +84,7 @@ class GradientDescentCreator {
         return weights;
     }
     // Use softmax algorithm to initialise the values for 4 -20 chocolates remaining. Takes a weight input, (3 x 1 vector, for each possible move), and exponentiates each input value and then normalises it, rounding it to either 0 or 1
-    public static double[][] softMaxAlgorithm(double[][] weights) {
+    public static double[][] softMaxAlgorithm(double[][] weights, int chocolates, int move) {
         double [][] weight_input = new double[4][1];
         double [][] weight_output = new double[21][4];
         for (int i = 4; i < weights.length; i++) {
@@ -114,17 +120,12 @@ class GradientDescentCreator {
 
 public class ChocolateChiliGameGradientDescent {
     public static void main(String[] args) throws IOException {
+        GradientDescentCreator gradientDescent = new GradientDescentCreator();
         final int MAXCHOCOLATES = 20;
         StatesDatabase db = CreateStatesDatabase();
         StatesFileInput();
-        ChocolateGame();
+        ChocolateGame(gradientDescent);
         StatesFileOutput(db);
-        GradientDescentCreator gradientDescent = new GradientDescentCreator();
-        GradientDescentCreator.datasetCreator();
-        double[][] weights = GradientDescentCreator.InitialiseWeights();
-        double[][] softmax_weights = GradientDescentCreator.softMaxAlgorithm(weights);
-
-        System.out.println(Arrays.deepToString(softmax_weights));
     }
     
     public static String ReadString(String message) {
@@ -180,12 +181,14 @@ public class ChocolateChiliGameGradientDescent {
         }
     }
     
-    public static void RepeatGames(int[] Games, int[] Winners, int chocolates) {
+    public static void RepeatGames(int[] Games, int[] Winners, int chocolates, GradientDescentCreator gradientDescent) {
         for (int i = 0; i < Games.length; i++) {
             Games[i] = i;
-            Moves(chocolates, Winners);
+            Moves(chocolates, Winners, gradientDescent);
+          
         }
         ResultStatistics(Winners);
+        
     }
     
     public static int DieRoll() {
@@ -209,20 +212,21 @@ public class ChocolateChiliGameGradientDescent {
         return chocolates;
     }
     
-    public static int Moves(int chocolates, int[] Winners) {
+    public static int Moves(int chocolates, int[] Winners, GradientDescentCreator gradientDescent) {
         StatesDatabase db = CreateStatesDatabase();
         int turns = 0;
         int current = chocolates;
+        int computerMove = 0;
         
         while (current > 0) {
             if (turns % 2 == 0) {
                 System.out.println("Computer's turn.");
-                int ComputerMove = ChooseMoves(current, db);
-                current = current - ComputerMove;
-                System.out.println("The computer takes " + ComputerMove + " chocolate(s).");
+                computerMove = ChooseMoves(current, db);
+                current = current - computerMove;
+                System.out.println("The computer takes " + computerMove + " chocolate(s).");
                 System.out.println("There are " + current + " chocolates remaining.");
-                CheckBadMoves(db, ComputerMove, chocolates, current);
-                updateStatesArray(db, true, ComputerMove, chocolates, current);
+                CheckBadMoves(db, computerMove, chocolates, current);
+                updateStatesArray(db, true, computerMove, chocolates, current);
                 turns = turns + 1;
             } else {
                 System.out.println("User's turn.");
@@ -249,6 +253,7 @@ public class ChocolateChiliGameGradientDescent {
             
             if (current == 0 || current <= 0) {
                 UpdateGameWinners(Winners, turns);
+                GradientDescentCreator.softMaxAlgorithm(gradientDescent.weights, chocolates, computerMove);
             } else {
                 System.out.println("Next round.");
             }
@@ -285,7 +290,7 @@ public class ChocolateChiliGameGradientDescent {
         read_states_file.close();
     }
     
-    public static  StatesDatabase CreateStatesDatabase() {
+    public static StatesDatabase CreateStatesDatabase() {
         int i;
         final int MAXCHOCOLATES = 20;
         StatesDatabase db = new StatesDatabase();
@@ -358,11 +363,12 @@ public class ChocolateChiliGameGradientDescent {
         return db.StatesDB[chocolates];
     }
     
-    public static void ChocolateGame() {
+    public static void ChocolateGame(GradientDescentCreator gradientDescent) {
         int chocolates = NumberOfChocolates();
         int[] Games = NumberOfGames();
         int[] Winners = Winners();
-        RepeatGames(Games, Winners, chocolates);
+        RepeatGames(Games, Winners, chocolates, gradientDescent);
+
     }
 }
 
