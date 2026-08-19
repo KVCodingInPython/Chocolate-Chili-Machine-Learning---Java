@@ -1,0 +1,319 @@
+ // @author Kaloyan Velikov
+// @SID 250078219
+// @date 03/11/2025
+// @version 1
+// Miniproject Level 8
+
+import java.io.*;
+import java.util.Arrays;
+import java.util.Random;
+import java.util.Scanner;
+
+
+class States {
+    public static void main(String[] args) {};
+    boolean eat_one_chocolate;
+    boolean eat_two_chocolates;
+    boolean eat_three_chocolates;
+    boolean eat_four_chocolates;
+}
+
+class StatesDatabase {
+    public static void main(String[] args) {};
+    States[] StatesDB;
+}
+
+public class ChocolateChiliGameGradientDescent {
+    public static void main(String[] args) {
+        datasetCreator();
+
+    }
+
+    public static void datasetCreator() {
+        int[] x = new int[20];
+        boolean[][] y = new boolean[20][3];
+
+        for (int i = 0; i < 20; i++) {
+            x[i] = i + 1;
+            if ( i < 3) {
+                y[i][i] = true;
+                y[i][(i + 1) % 3] = false;
+                y[i][(i + 2) % 3] = false;
+            }
+            else {
+                y[i][0] = false;
+                y[i][1] = false;
+                y[i][2] = true;
+            }
+                
+         
+        }
+
+        System.out.println(Arrays.toString(x));
+        System.out.println(Arrays.deepToString(y));
+
+        
+        
+
+
+
+
+
+    }
+
+
+}
+
+public class ChocolateChiliGameGradientDescent {
+    public void main(String[] args) throws IOException {
+        final int MAXCHOCOLATES = 20;
+        StatesDatabase db = CreateStatesDatabase();
+        StatesFileInput();
+        ChocolateGame();
+        StatesFileOutput(db);
+    }
+    
+    public static String ReadString(String message) {
+        String answer;
+        Scanner scanner = new Scanner(System.in);
+        System.out.println(message);
+        answer = scanner.nextLine();
+        return answer;
+    }
+    
+    public static int ReadInt(String message) {
+        int intAnswer;
+        Scanner scanner = new Scanner(System.in);
+        System.out.println(message);
+        intAnswer = Integer.parseInt(scanner.nextLine());
+        return intAnswer;
+    }
+    
+    public static int[] NumberOfGames() {
+        final int GamesAnswer = ReadInt("How many games would you like to play?");
+        int[] Games = new int[GamesAnswer];
+        System.out.println(Arrays.toString(Games));
+        return Games;
+    }
+    
+    public static int[] Winners() {
+        final int WinnersLength = 2;
+        int[] Winners = new int[WinnersLength];
+        System.out.println(Arrays.toString(Winners));
+        return Winners;
+    }
+    
+    public static void UpdateGameWinners(int[] Winners, int turns) {
+        if (turns % 2 == 0) {
+            System.out.println("The user has won the game.");
+            System.out.println("Congratulations to the user, the loser (the computer) now has to eat the chilli!");
+            Winners[0] = Winners[0] + 1;
+        } else {
+            System.out.println("The computer has won the game.");
+            System.out.println("Congratulations to the computer, the loser (the user) now has to eat the chilli!");
+            Winners[1] = Winners[1] + 1;
+        }
+        System.out.println(Arrays.toString(Winners));
+    }
+    
+    public static void ResultStatistics(int[] Winners) {
+        if (Winners[0] > Winners[1]) {
+            System.out.println("The user has won the most games and so has won overall.");
+        } else if (Winners[0] < Winners[1]) {
+            System.out.println("The computer has won the most games, so has won overall.");
+        } else {
+            System.out.println("There has been a draw. So no one has to eat an extra chilli.");
+        }
+    }
+    
+    public  void RepeatGames(int[] Games, int[] Winners, int chocolates) {
+        for (int i = 0; i < Games.length; i++) {
+            Games[i] = i;
+            Moves(chocolates, Winners);
+        }
+        ResultStatistics(Winners);
+    }
+    
+    public static int DieRoll() {
+        Random die = new Random();
+        int Random_number = 1 + die.nextInt(2);
+        System.out.println(Random_number);
+        System.out.println("The number rolled by the dice is " + Random_number + ".");
+        return Random_number;
+    }
+    
+    public static String TheRules() {
+        System.out.println("Welcome to the Chocolate Chilli Game. Players must take it in turns to eat 1, 2 or 3 chocolates from a pile. If there are no chocolates left, the player loses (has to eat the chilli).");
+        String name = ReadString("Hello, what is your name?");
+        return name;
+    }
+    
+    public static int NumberOfChocolates() {
+        String name = TheRules();
+        int chocolates = ReadInt("How many chocolates would you like to start with?");
+        System.out.println("Thanks, " + name + "! There are " + chocolates + " chocolates on the table. I will go first.");
+        return chocolates;
+    }
+    
+    public int Moves(int chocolates, int[] Winners) {
+        StatesDatabase db = CreateStatesDatabase();
+        int turns = 0;
+        int current = chocolates;
+        
+        while (current > 0) {
+            if (turns % 2 == 0) {
+                System.out.println("Computer's turn.");
+                int ComputerMove = ChooseMoves(current, db);
+                current = current - ComputerMove;
+                System.out.println("The computer takes " + ComputerMove + " chocolate(s).");
+                System.out.println("There are " + current + " chocolates remaining.");
+                CheckBadMoves(db, ComputerMove, chocolates, current);
+                updateStatesArray(db, true, ComputerMove, chocolates, current);
+                turns = turns + 1;
+            } else {
+                System.out.println("User's turn.");
+                int move = ReadInt("Enter a random number between 1 and 3.");
+                while (move < 1 || move > 3) {
+                    move = ReadInt("Invalid move. Enter a random number between 1 and 3 again.");
+                }
+                
+                if (move == 1) {
+                    System.out.println("The move: Unfortunately, I will take only 1 chocolate.");
+                    current = current - move;
+                    System.out.println("There are currently " + current + " chocolates remaining on the table.");
+                } else if (move == 2) {
+                    System.out.println("The move: I will take 2 chocolates.");
+                    current = current - move;
+                    System.out.println("There are currently " + current + " chocolates remaining on the table.");
+                } else if (move == 3) {
+                    System.out.println("The move: I will take 3 chocolates.");
+                    current = current - move;
+                    System.out.println("There are currently " + current + " chocolates remaining on the table.");
+                }
+                turns = turns + 1;
+            }
+            
+            if (current == 0 || current <= 0) {
+                UpdateGameWinners(Winners, turns);
+            } else {
+                System.out.println("Next round.");
+            }
+        }
+        return current;
+    }
+    
+    public static void StatesFileOutput(StatesDatabase db) throws IOException {
+        String filename = ReadString("What would you like the name of the file to be created as?");
+        PrintWriter inputStates = new PrintWriter(new FileWriter(filename));
+        final int STATES_COUNT = 20;
+        
+        for (int i = 1; i <= STATES_COUNT; i++) {
+            States s = db.StatesDB[i];
+            inputStates.println(s.eat_one_chocolate + "," + s.eat_two_chocolates + "," + s.eat_three_chocolates);
+        }
+        inputStates.close();
+        System.out.println("Saved the states of the game to " + filename);
+    }
+    
+    public static void StatesFileInput() throws IOException {
+        String filename = "3";
+        File statesFile = new File(filename);
+        if (!statesFile.exists()) {
+            System.out.println("No saved states file found. Starting with new states.");
+            return;
+        }
+        BufferedReader read_states_file = new BufferedReader(new FileReader(filename));
+        String state;
+        
+        while ((state = read_states_file.readLine()) != null) {
+            System.out.println(state);
+        }
+        read_states_file.close();
+    }
+    
+    public  StatesDatabase CreateStatesDatabase() {
+        int i;
+        final int MAXCHOCOLATES = 20;
+        StatesDatabase db = new StatesDatabase();
+        db.StatesDB = new States[MAXCHOCOLATES + 1];
+        
+        for (i = 0; i <= MAXCHOCOLATES; i++) {
+            if (i == 1) {
+                db.StatesDB[i] = CreateStates(true, false, false);
+            } else if (i == 2) {
+                db.StatesDB[i] = CreateStates(true, true, false);
+            } else {
+                db.StatesDB[i] = CreateStates(true, true, true);
+            }
+        }
+        return db;
+    }
+    
+    public static void updateStatesArray(StatesDatabase db, boolean computerMove, int ComputerMove, int chocolates, int current) {
+        if (computerMove) {
+            CheckBadMoves(db, ComputerMove, chocolates, current);
+        }
+    }
+    
+    public static boolean CheckPossibleMoves(States s) {
+        boolean Possible = s.eat_one_chocolate || s.eat_two_chocolates || s.eat_three_chocolates;
+        return Possible;
+    }
+    
+    public static int ChooseMoves(int current, StatesDatabase db) {
+        States s = db.StatesDB[current];
+        int ComputerMove = 0;
+        
+        if (s.eat_three_chocolates && current >= 3) {
+            int RandomComputerMove = DieRoll();
+            ComputerMove = RandomComputerMove;
+        } else if (s.eat_two_chocolates && current >= 2) {
+            ComputerMove = 2;
+        } else if (s.eat_one_chocolate && current >= 1) {
+            ComputerMove = 1;
+        } else {
+            System.out.println("Computer cannot make a move. It must resign!");
+            ComputerMove = 0;
+        }
+        return ComputerMove;
+    }
+    
+    public static StatesDatabase CheckBadMoves(StatesDatabase db, int ComputerMove, int chocolates, int current) {
+        States s = getState(db, chocolates);
+        if (current == 0 || current < 0) {
+            if (ComputerMove == 1) {
+                s.eat_one_chocolate = false;
+            } else if (ComputerMove == 2) {
+                s.eat_two_chocolates = false;
+            } else {
+                s.eat_three_chocolates = false;
+            }
+        }
+        return db;
+    }
+    
+    public  States CreateStates(boolean one, boolean two, boolean three) {
+        States s = new States();
+        s.eat_one_chocolate = one;
+        s.eat_two_chocolates = two;
+        s.eat_three_chocolates = three;
+        return s;
+    }
+    
+    public static States getState(StatesDatabase db, int chocolates) {
+        return db.StatesDB[chocolates];
+    }
+    
+    public  void ChocolateGame() {
+        int chocolates = NumberOfChocolates();
+        int[] Games = NumberOfGames();
+        int[] Winners = Winners();
+        RepeatGames(Games, Winners, chocolates);
+    }
+}
+
+    
+
+
+
+
