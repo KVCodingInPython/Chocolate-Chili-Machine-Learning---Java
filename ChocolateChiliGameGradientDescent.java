@@ -25,23 +25,26 @@ class StatesDatabase {
 
 class GradientDescentCreator {
     double [][] weights;
+    final double learningRate = 0.1;
+    final double rewardForWin = 1.0;
+    final double penaltyForLoss = -1.0;
 
 
     GradientDescentCreator() {
         datasetCreator();
-        this.weights = this.InitialiseWeights();
+       this.weights = InitialiseWeights();
     }
 
     public static void main(String[] args) {
     };
 
-    public static void datasetCreator() {
+    private static void datasetCreator() {
         int[] x = new int[21];
         boolean[][] y = new boolean[21][4];
 
         for (int i = 1; i < 21; i++) {
             x[i] = i;
-            if ( i < 3) {
+            if ( i <= 3) {
                 y[i][i] = true;
                 y[i][(i + 1) % 4] = false;
                 y[i][(i + 2) % 4] = false;
@@ -60,7 +63,7 @@ class GradientDescentCreator {
 
     }
     // [state][move] : state: 1 - 20, moves: 0 - 3, all inclusive
-    public static double[][] InitialiseWeights() {
+    private static double[][] InitialiseWeights() {
         double[][] weights = new double[21][4];
         
         for (int i = 1; i < 21; i++) {
@@ -84,7 +87,7 @@ class GradientDescentCreator {
         return weights;
     }
     // Use softmax algorithm to initialise the values for 4 -20 chocolates remaining. Takes a weight input, (3 x 1 vector, for each possible move), and exponentiates each input value and then normalises it, rounding it to either 0 or 1
-    public static double[][] softMaxAlgorithm(double[][] weights, int chocolates, int move) {
+    public static double[][] softMaxAlgorithm(double[][] weights, int computerState, int computerMove) {
         double [][] weight_input = new double[4][1];
         double [][] weight_output = new double[21][4];
         for (int i = 4; i < weights.length; i++) {
@@ -95,9 +98,9 @@ class GradientDescentCreator {
             double e_2 = Math.exp(weight_input[2][0]);
             double e_3 = Math.exp(weight_input[3][0]);
             double sum = e_1 + e_2 + e_3;
-            weight_output[i][1] = Math.round(e_1 / sum);
-            weight_output[i][2] = Math.round(e_2 / sum);
-            weight_output[i][3] = Math.round(e_3 / sum);      
+            weight_output[i][1] = e_1 / sum;
+            weight_output[i][2] = e_2 / sum;
+            weight_output[i][3] = e_3 / sum;
 
             // Unit testing method calc
             System.out.println(e_1 / sum);
@@ -105,18 +108,37 @@ class GradientDescentCreator {
             System.out.println(e_3 / sum); 
         }
         return weight_output;
+    }
 
-    } 
-    //
+    /*Calculates loss function: L = -G  * log(P), 
+    where G is the reward for winning or losing for computer, 
+    and P, is the probability of computer making a particular move 
+    given current state (chocolates remaining).
+    */
+    public static double CalculateLossFunction(double[][] probabilities, int computerState, int move, String winner) {
+        double loss;
+        double reward = winner.equals("Computer") ? 1.0 : -1.0;
+        double probability = probabilities[computerState][move];
+        
+        probability = Math.max(probability, 1.0e-12);
+        loss = -1 * reward * Math.log(probability);
+        System.out.println("Loss function: " + loss);
+        return loss;
+    }
 
+    public static void updateWeights(double[][] weights, double[][] probabilities, int state, int selectedMove, String winner, double learningRate) {
+        double reward = winner.equals("Computer") ? 1.0 : -1.0;
+        for (int move = 1; move <=3; move++) {
+            double target = (move == selectedMove) ? 1.0 : 0.0;
+            double gradient = reward * (probabilities[state][move] - target);
+            weights[state][move] -= learningRate * gradient;
+        }
 
-
-
-
-    
-
-
+        return;
+    }
 }
+
+    //
 
 public class ChocolateChiliGameGradientDescent {
     public static void main(String[] args) throws IOException {
@@ -158,17 +180,20 @@ public class ChocolateChiliGameGradientDescent {
         return Winners;
     }
     
-    public static void UpdateGameWinners(int[] Winners, int turns) {
+    public static String UpdateGameWinners(int[] Winners, int turns) {
         if (turns % 2 == 0) {
             System.out.println("The user has won the game.");
             System.out.println("Congratulations to the user, the loser (the computer) now has to eat the chilli!");
             Winners[0] = Winners[0] + 1;
+            System.out.println(Arrays.toString(Winners));
+            return "User";
         } else {
             System.out.println("The computer has won the game.");
             System.out.println("Congratulations to the computer, the loser (the user) now has to eat the chilli!");
             Winners[1] = Winners[1] + 1;
+            System.out.println(Arrays.toString(Winners));
+            return "Computer";
         }
-        System.out.println(Arrays.toString(Winners));
     }
     
     public static void ResultStatistics(int[] Winners) {
@@ -193,7 +218,7 @@ public class ChocolateChiliGameGradientDescent {
     
     public static int DieRoll() {
         Random die = new Random();
-        int Random_number = 1 + die.nextInt(2);
+        int Random_number = 1 + die.nextInt(3);
         System.out.println(Random_number);
         System.out.println("The number rolled by the dice is " + Random_number + ".");
         return Random_number;
@@ -217,12 +242,18 @@ public class ChocolateChiliGameGradientDescent {
         int turns = 0;
         int current = chocolates;
         int computerMove = 0;
+        int computerState = 0;
         
         while (current > 0) {
             if (turns % 2 == 0) {
+
                 System.out.println("Computer's turn.");
+                computerState = current;
                 computerMove = ChooseMoves(current, db);
                 current = current - computerMove;
+                // Update the weights using the softmax algorithm on each computer turn, to ensure that the computer learns from its previous moves and improves its strategy over time.
+                gradientDescent.softMaxAlgorithm(gradientDescent.weights, computerState, computerMove);
+
                 System.out.println("The computer takes " + computerMove + " chocolate(s).");
                 System.out.println("There are " + current + " chocolates remaining.");
                 CheckBadMoves(db, computerMove, chocolates, current);
@@ -252,9 +283,11 @@ public class ChocolateChiliGameGradientDescent {
             }
             
             if (current == 0 || current <= 0) {
-                UpdateGameWinners(Winners, turns);
-                GradientDescentCreator.softMaxAlgorithm(gradientDescent.weights, chocolates, computerMove);
-            } else {
+                String winner = UpdateGameWinners(Winners, turns);
+                double[][] probabilities = GradientDescentCreator.softMaxAlgorithm(gradientDescent.weights, computerState, computerMove);
+                double loss = GradientDescentCreator.CalculateLossFunction(probabilities, computerState, computerMove, winner);
+                GradientDescentCreator.updateWeights(gradientDescent.weights, probabilities, computerState, computerMove, winner, gradientDescent.learningRate);
+                System.out.println("Loss: " + loss);
                 System.out.println("Next round.");
             }
         }
