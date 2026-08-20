@@ -10,19 +10,6 @@ import java.util.Random;
 import java.util.Scanner;
 
 
-class States {
-    public static void main(String[] args) {};
-    boolean eat_one_chocolate;
-    boolean eat_two_chocolates;
-    boolean eat_three_chocolates;
-    boolean eat_four_chocolates;
-}
-
-class StatesDatabase {
-    public static void main(String[] args) {};
-    States[] StatesDB;
-}
-
 class GradientDescentCreator {
     double [][] weights;
     final double learningRate = 0.1;
@@ -144,10 +131,8 @@ public class ChocolateChiliGameGradientDescent {
     public static void main(String[] args) throws IOException {
         GradientDescentCreator gradientDescent = new GradientDescentCreator();
         final int MAXCHOCOLATES = 20;
-        StatesDatabase db = CreateStatesDatabase();
-        StatesFileInput();
         ChocolateGame(gradientDescent);
-        StatesFileOutput(db);
+
     }
     
     public static String ReadString(String message) {
@@ -236,9 +221,26 @@ public class ChocolateChiliGameGradientDescent {
         System.out.println("Thanks, " + name + "! There are " + chocolates + " chocolates on the table. I will go first.");
         return chocolates;
     }
+
+    public static int CalculateComputerMove(int current, double[][] probabilities) {
+        if (current <= 3) {
+            return Math.max(1, current - 1);
+        }
+
+        double maxProbability = -1.0;
+        int computerMove = 1;
+        int maximumMove = Math.min(3, current - 1);
+
+        for (int move = 1; move <= maximumMove; move++) {
+            if (probabilities[current][move] > maxProbability) {
+                maxProbability = probabilities[current][move];
+                computerMove = move;
+            }
+        }
+        return computerMove;
+    } 
     
     public static int Moves(int chocolates, int[] Winners, GradientDescentCreator gradientDescent) {
-        StatesDatabase db = CreateStatesDatabase();
         int turns = 0;
         int current = chocolates;
         int computerMove = 0;
@@ -249,20 +251,21 @@ public class ChocolateChiliGameGradientDescent {
 
                 System.out.println("Computer's turn.");
                 computerState = current;
-                computerMove = ChooseMoves(current, db);
+                double[][] probabilities = GradientDescentCreator.softMaxAlgorithm(
+                    gradientDescent.weights,
+                    computerState,
+                    0
+                );
+                computerMove = CalculateComputerMove(computerState, probabilities);
                 current = current - computerMove;
-                // Update the weights using the softmax algorithm on each computer turn, to ensure that the computer learns from its previous moves and improves its strategy over time.
-                gradientDescent.softMaxAlgorithm(gradientDescent.weights, computerState, computerMove);
 
                 System.out.println("The computer takes " + computerMove + " chocolate(s).");
                 System.out.println("There are " + current + " chocolates remaining.");
-                CheckBadMoves(db, computerMove, chocolates, current);
-                updateStatesArray(db, true, computerMove, chocolates, current);
                 turns = turns + 1;
             } else {
                 System.out.println("User's turn.");
                 int move = ReadInt("Enter a random number between 1 and 3.");
-                while (move < 1 || move > 3) {
+                while (move < 1 || move > 3 || move > current) {
                     move = ReadInt("Invalid move. Enter a random number between 1 and 3 again.");
                 }
                 
@@ -294,107 +297,6 @@ public class ChocolateChiliGameGradientDescent {
         return current;
     }
     
-    public static void StatesFileOutput(StatesDatabase db) throws IOException {
-        String filename = ReadString("What would you like the name of the file to be created as?");
-        PrintWriter inputStates = new PrintWriter(new FileWriter(filename));
-        final int STATES_COUNT = 20;
-        
-        for (int i = 1; i <= STATES_COUNT; i++) {
-            States s = db.StatesDB[i];
-            inputStates.println(s.eat_one_chocolate + "," + s.eat_two_chocolates + "," + s.eat_three_chocolates);
-        }
-        inputStates.close();
-        System.out.println("Saved the states of the game to " + filename);
-    }
-    
-    public static void StatesFileInput() throws IOException {
-        String filename = "3";
-        File statesFile = new File(filename);
-        if (!statesFile.exists()) {
-            System.out.println("No saved states file found. Starting with new states.");
-            return;
-        }
-        BufferedReader read_states_file = new BufferedReader(new FileReader(filename));
-        String state;
-        
-        while ((state = read_states_file.readLine()) != null) {
-            System.out.println(state);
-        }
-        read_states_file.close();
-    }
-    
-    public static StatesDatabase CreateStatesDatabase() {
-        int i;
-        final int MAXCHOCOLATES = 20;
-        StatesDatabase db = new StatesDatabase();
-        db.StatesDB = new States[MAXCHOCOLATES + 1];
-        
-        for (i = 0; i <= MAXCHOCOLATES; i++) {
-            if (i == 1) {
-                db.StatesDB[i] = CreateStates(true, false, false);
-            } else if (i == 2) {
-                db.StatesDB[i] = CreateStates(true, true, false);
-            } else {
-                db.StatesDB[i] = CreateStates(true, true, true);
-            }
-        }
-        return db;
-    }
-    
-    public static void updateStatesArray(StatesDatabase db, boolean computerMove, int ComputerMove, int chocolates, int current) {
-        if (computerMove) {
-            CheckBadMoves(db, ComputerMove, chocolates, current);
-        }
-    }
-    
-    public static boolean CheckPossibleMoves(States s) {
-        boolean Possible = s.eat_one_chocolate || s.eat_two_chocolates || s.eat_three_chocolates;
-        return Possible;
-    }
-    
-    public static int ChooseMoves(int current, StatesDatabase db) {
-        States s = db.StatesDB[current];
-        int ComputerMove = 0;
-        
-        if (s.eat_three_chocolates && current >= 3) {
-            int RandomComputerMove = DieRoll();
-            ComputerMove = RandomComputerMove;
-        } else if (s.eat_two_chocolates && current >= 2) {
-            ComputerMove = 2;
-        } else if (s.eat_one_chocolate && current >= 1) {
-            ComputerMove = 1;
-        } else {
-            System.out.println("Computer cannot make a move. It must resign!");
-            ComputerMove = 0;
-        }
-        return ComputerMove;
-    }
-    
-    public static StatesDatabase CheckBadMoves(StatesDatabase db, int ComputerMove, int chocolates, int current) {
-        States s = getState(db, chocolates);
-        if (current == 0 || current < 0) {
-            if (ComputerMove == 1) {
-                s.eat_one_chocolate = false;
-            } else if (ComputerMove == 2) {
-                s.eat_two_chocolates = false;
-            } else {
-                s.eat_three_chocolates = false;
-            }
-        }
-        return db;
-    }
-    
-    public static States CreateStates(boolean one, boolean two, boolean three) {
-        States s = new States();
-        s.eat_one_chocolate = one;
-        s.eat_two_chocolates = two;
-        s.eat_three_chocolates = three;
-        return s;
-    }
-    
-    public static States getState(StatesDatabase db, int chocolates) {
-        return db.StatesDB[chocolates];
-    }
     
     public static void ChocolateGame(GradientDescentCreator gradientDescent) {
         int chocolates = NumberOfChocolates();
