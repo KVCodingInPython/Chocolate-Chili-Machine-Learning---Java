@@ -287,10 +287,28 @@ public class ChocolateChiliGameGradientDescent {
             
             if (current == 0 || current <= 0) {
                 String winner = UpdateGameWinners(Winners, turns);
-                double[][] probabilities = GradientDescentCreator.softMaxAlgorithm(gradientDescent.weights, computerState, computerMove);
-                double loss = GradientDescentCreator.CalculateLossFunction(probabilities, computerState, computerMove, winner);
-                GradientDescentCreator.updateWeights(gradientDescent.weights, probabilities, computerState, computerMove, winner, gradientDescent.learningRate);
-                System.out.println("Loss: " + loss);
+                if (computerState >= 4) {
+                    double[][] probabilities = GradientDescentCreator.softMaxAlgorithm(
+                        gradientDescent.weights,
+                        computerState,
+                        computerMove
+                    );
+                    double loss = GradientDescentCreator.CalculateLossFunction(
+                        probabilities,
+                        computerState,
+                        computerMove,
+                        winner
+                    );
+                    GradientDescentCreator.updateWeights(
+                        gradientDescent.weights,
+                        probabilities,
+                        computerState,
+                        computerMove,
+                        winner,
+                        gradientDescent.learningRate
+                    );
+                    System.out.println("Loss: " + loss);
+                }
                 System.out.println("Next round.");
             }
         }
