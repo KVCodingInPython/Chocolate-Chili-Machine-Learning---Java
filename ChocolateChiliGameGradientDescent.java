@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Random;
 import java.util.Scanner;
 
@@ -181,29 +183,36 @@ class GradientDescentCreator {
     public static void runLearningTest(GradientDescentCreator gradientDescent, int numGames, int batchSize) {
         int computerWins = 0;
         int userWins = 0;
-        int batchWins = 0;
+        ArrayList<Integer> recentResults = new ArrayList<>();
 
         for (int game = 1; game <= numGames; game++) {
             ArrayList<GameExperience> gameHistory = new ArrayList<>();
             int winnerCode = playOneRandomGame(gradientDescent, gameHistory);
 
-            String winner = (winnerCode == 1) ? "Computer" : "User";
-
             if (winnerCode == 1) {
                 computerWins++;
-                batchWins++;
             } else {
                 userWins++;
             }
 
+            recentResults.add(winnerCode == 1 ? 1 : 0);
+            if (recentResults.size() > 100) {
+                recentResults.remove(0);
+            }
+
+            String winner = (winnerCode == 1) ? "Computer" : "User";
             trainFromHistory(gradientDescent.weights, gameHistory, winner);
 
             if (game % batchSize == 0) {
-                double winRate = 100.0 * batchWins / batchSize;
-                System.out.println("Games " + (game - batchSize + 1) + " to " + game + ": computer win rate = " + winRate + "%");
+                int winsInWindow = 0;
+                for (int result : recentResults) {
+                    winsInWindow += result;
+                }
+
+                double movingAverage = 100.0 * winsInWindow / recentResults.size();
+                System.out.println("Games " + (game - batchSize + 1) + " to " + game + ": last 100-game moving average = " + movingAverage + "%");
                 printStateProbabilities(gradientDescent.weights, 8);
                 System.out.println("---------------------------");
-                batchWins = 0;
             }
         }
 
@@ -216,7 +225,7 @@ class GradientDescentCreator {
 public class ChocolateChiliGameGradientDescent {
     public static void main(String[] args) throws IOException {
         GradientDescentCreator gradientDescent = new GradientDescentCreator();
-        GradientDescentCreator.runLearningTest(gradientDescent, 200, 20);
+        GradientDescentCreator.runLearningTest(gradientDescent, 500, 100);
     }
 
     public static String ReadString(String message) {
@@ -277,7 +286,7 @@ public class ChocolateChiliGameGradientDescent {
             games[i] = i;
             Moves(chocolates, winners, model);
         }
-        
+
         ResultStatistics(winners);
 
     }
