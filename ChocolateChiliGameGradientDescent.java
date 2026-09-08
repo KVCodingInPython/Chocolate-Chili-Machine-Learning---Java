@@ -4,14 +4,15 @@
 // @version 1
 // Miniproject Level 8
 
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.Queue;
 import java.util.Random;
 import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 class GameExperience {
     int state;
@@ -44,13 +45,11 @@ class GradientDescentCreator {
          * @param winner The winner of the game.
          */
 
-
-
     // Save training data to a file for persistence and future analysis
     public static void saveWeights(double[][] weights, String filename) {
-        try (PrintWriter out = new PrintWriter(filename)) {
+        try (FileWriter out = new FileWriter(filename)) {
             for (int state = 1; state < weights.length; state++) {
-                out.println("State :" + "" + state + weights[state][1] + "" + weights[state][2] + "" + weights[state][3]);
+                out.write("State :" + "" + state + weights[state][1] + "" + weights[state][2] + "" + weights[state][3] + "\n");
             }
         } catch (IOException e) {
             System.out.println("Error saving weights to file: " + e.getMessage());
@@ -58,6 +57,36 @@ class GradientDescentCreator {
             return;
         }
         return;
+    }
+
+    public static double[][] loadWeights(String filename) {
+        Pattern regexPattern = Pattern.compile("^State\\s+(\\d+)\\s*::\\s*(.*)$");
+        double [][] weights = new double[21][4];
+        try (Scanner scanner = new Scanner(new FileReader(filename))) {
+            while (scanner.hasNextLine()) {
+                // Regex implementation to parse file lines and extract state and weights store it in weights matrix
+                /* Process the parsed parts and fill the weights matrix with according 
+                    probabilities for each move (1 - 3) inclusive at every state
+                    (1 - 20) */
+                String line = scanner.nextLine().trim();
+                Matcher matcher = regexPattern.matcher(line);
+                if (matcher.find()) {
+                    int state = Integer.parseInt(matcher.group(1));
+                    String[] weightValues = matcher.group(2).trim().split("\\s+");
+
+                    for (int move = 1; move <= 3 && (move - 1) < weightValues.length; move++) {
+                        weights[state][move] = Double.parseDouble(weightValues[move - 1]);
+                    }
+                }
+            }
+            System.out.println(Arrays.deepToString(weights));
+            System.out.println("Weights loaded successfully from file: " + filename);
+        } catch (IOException e) {
+            System.err.println("Error loading weights from file: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to load weights from file: " + filename, e);
+        }
+        return weights;
     }
 
 
@@ -134,7 +163,7 @@ class GradientDescentCreator {
         System.out.println("Move 3: " + probabilities[state][3]);
     }
 
-    public static void trainFromHistory(double[][] weights, ArrayList<GameExperience> history, String winner) {
+    public static void trainFromHistory(GradientDescentCreator gradientDescent, ArrayList<GameExperience> history, String winner) {
         if (history == null || history.isEmpty()) {
             return;
         }
@@ -142,12 +171,12 @@ class GradientDescentCreator {
         for (GameExperience exp : history) {
             if (exp.state <= 3) continue;
 
-            double[][] probs = softMaxAlgorithm(weights, exp.state);
-            updateWeights(weights, probs, exp.state, exp.move, winner, 0.1);
+            double[][] probs = softMaxAlgorithm(gradientDescent.weights, exp.state);
+            updateWeights(gradientDescent.weights, probs, exp.state, exp.move, winner, gradientDescent.learningRate);
         }
     }
 
-    public static int playOneRandomGame(GradientDescentCreator gradientDescent, ArrayList<GameExperience> history) {
+    public static int playTrainingGame(GradientDescentCreator gradientDescent, ArrayList<GameExperience> history) {
         int current = 20;
         int turns = 0;
 
@@ -155,13 +184,13 @@ class GradientDescentCreator {
             if (turns % 2 == 0) {
                 int state = current;
                 double[][] probs = softMaxAlgorithm(gradientDescent.weights, state);
-                int move = ChocolateChiliGameGradientDescent.CalculateComputerMove(state, probs);
+                int move = chooseMoveFromProbabilities(state, probs);
 
                 history.add(new GameExperience(state, move));
                 current -= move;
 
                 if (current <= 0) {
-                    return 1;
+                    return 0;
                 }
             } else {
                 int move = 1 + new Random().nextInt(3);
@@ -171,13 +200,52 @@ class GradientDescentCreator {
                 current -= move;
 
                 if (current <= 0) {
-                    return 0;
+                    return 1;
                 }
             }
             turns++;
         }
 
         return 0;
+    }
+
+    public static int CalculateComputerMove(int current, double[][] probabilities) {
+        if (current <= 3) {
+            return Math.max(1, current - 1);
+        }
+
+        double maxProbability = -1.0;
+        int computerMove = 1;
+        int maximumMove = Math.min(3, current - 1);
+
+        for (int move = 1; move <= maximumMove; move++) {
+            if (probabilities[current][move] > maxProbability) {
+                maxProbability = probabilities[current][move];
+                computerMove = move;
+            }
+        }
+        return computerMove;
+    }
+
+    public static int chooseMoveFromProbabilities(int state, double[][] probabilities) {
+        if (state <= 3) {
+            return Math.max(1, state - 1);
+        }
+
+        double random_value = Math.random();
+        double cumulative_probability = 0.0;
+
+        for (int move = 1; move <= 3; move++) {
+            if (move > Math.min(3, state - 1)) {
+                continue;
+            }
+            cumulative_probability += probabilities[state][move];
+
+            if (random_value <= cumulative_probability) {
+                return move;
+            }
+        }
+        return Math.min(3, state - 1);
     }
 
     public static void runLearningTest(GradientDescentCreator gradientDescent, int numGames, int batchSize) {
@@ -187,7 +255,7 @@ class GradientDescentCreator {
 
         for (int game = 1; game <= numGames; game++) {
             ArrayList<GameExperience> gameHistory = new ArrayList<>();
-            int winnerCode = playOneRandomGame(gradientDescent, gameHistory);
+            int winnerCode = playTrainingGame(gradientDescent, gameHistory);
 
             if (winnerCode == 1) {
                 computerWins++;
@@ -201,7 +269,79 @@ class GradientDescentCreator {
             }
 
             String winner = (winnerCode == 1) ? "Computer" : "User";
-            trainFromHistory(gradientDescent.weights, gameHistory, winner);
+            trainFromHistory(gradientDescent, gameHistory, winner);
+
+            if (game % batchSize == 0) {
+                int winsInWindow = 0;
+                for (int result : recentResults) {
+                    winsInWindow += result;
+                }
+
+                double movingAverage = 100.0 * winsInWindow / recentResults.size();
+                System.out.println("Games " + (game - batchSize + 1) + " to " + game + ": last 100-game moving average = " + movingAverage + "%");
+                printStateProbabilities(gradientDescent.weights, 8);
+                saveWeights(gradientDescent.weights, "weights.txt");
+                System.out.println("---------------------------");
+            }
+        }
+
+        System.out.println("Final totals:");
+        System.out.println("Computer wins: " + computerWins);
+        System.out.println("User wins: " + userWins);
+    }
+
+
+    public static int playEvaluationGame(GradientDescentCreator gradientDescent) {
+        int current = 20;
+        int turns = 0;
+
+        while (current > 0) {
+            if (turns % 2 == 0) {
+                int state = current;
+                double[][] probs = softMaxAlgorithm(gradientDescent.weights, state);
+                Random rand = new Random();
+                int move = CalculateComputerMove(state, probs);
+                current -= move;
+
+                if (current <= 0) {
+                    return 0;
+                }
+            } else {
+                int move = 1 + new Random().nextInt(3);
+                if (move > current) {
+                    move = current;
+                }
+                current -= move;
+
+                if (current <= 0) {
+                    return 1;
+                }
+            }
+            turns++;
+        }
+
+        return 0;
+    }
+
+    public static void runEvaluationTest(GradientDescentCreator gradientDescent, int numGames, int batchSize) {
+         int computerWins = 0;
+        int userWins = 0;
+        ArrayList<Integer> recentResults = new ArrayList<>();
+
+        for (int game = 1; game <= numGames; game++) {
+            ArrayList<GameExperience> gameHistory = new ArrayList<>();
+            int winnerCode = playEvaluationGame(gradientDescent);
+
+            if (winnerCode == 1) {
+                computerWins++;
+            } else {
+                userWins++;
+            }
+
+            recentResults.add(winnerCode == 1 ? 1 : 0);
+            if (recentResults.size() > 100) {
+                recentResults.remove(0);
+            }
 
             if (game % batchSize == 0) {
                 int winsInWindow = 0;
@@ -219,13 +359,20 @@ class GradientDescentCreator {
         System.out.println("Final totals:");
         System.out.println("Computer wins: " + computerWins);
         System.out.println("User wins: " + userWins);
+
     }
+
+
 }
 
 public class ChocolateChiliGameGradientDescent {
     public static void main(String[] args) throws IOException {
         GradientDescentCreator gradientDescent = new GradientDescentCreator();
         GradientDescentCreator.runLearningTest(gradientDescent, 500, 100);
+        GradientDescentCreator.loadWeights("weights.txt");
+        // GradientDescentCreator.runEvaluationTest(gradientDescent, 100, 10);
+
+
     }
 
     public static String ReadString(String message) {
@@ -312,24 +459,6 @@ public class ChocolateChiliGameGradientDescent {
         return chocolates;
     }
 
-    public static int CalculateComputerMove(int current, double[][] probabilities) {
-        if (current <= 3) {
-            return Math.max(1, current - 1);
-        }
-
-        double maxProbability = -1.0;
-        int computerMove = 1;
-        int maximumMove = Math.min(3, current - 1);
-
-        for (int move = 1; move <= maximumMove; move++) {
-            if (probabilities[current][move] > maxProbability) {
-                maxProbability = probabilities[current][move];
-                computerMove = move;
-            }
-        }
-        return computerMove;
-    }
-
     public static int Moves(int chocolates, int[] winners, GradientDescentCreator model) {
         int turns = 0;
         int current = chocolates;
@@ -341,7 +470,7 @@ public class ChocolateChiliGameGradientDescent {
                 System.out.println("Computer's turn.");
                 computerState = current;
                 double[][] probabilities = GradientDescentCreator.softMaxAlgorithm(model.weights, computerState);
-                computerMove = CalculateComputerMove(computerState, probabilities);
+                computerMove = model.CalculateComputerMove(computerState, probabilities);
                 current -= computerMove;
 
                 System.out.println("The computer takes " + computerMove + " chocolate(s).");
