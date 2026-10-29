@@ -1,0 +1,19 @@
+.root {
+    -fx-font-family: "Segoe UI";
+}
+
+.label {
+    -fx-font-size: 14px;
+}
+
+.button {
+    -fx-font-size: 14px;
+}
+
+.chart {
+    -fx-pref-height: 300px;
+}
+
+.text-area {
+    -fx-font-family: Consolas;
+}

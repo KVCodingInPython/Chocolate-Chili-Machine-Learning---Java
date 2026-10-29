@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.chart.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.chocolatechili.gui.DashboardController"
+            stylesheets="@dashboard.css">
+
+    <top>
+        <VBox spacing="10">
+
+            <Label text="Chocolate Chili AI Dashboard"
+                   style="-fx-font-size: 26px;
+                          -fx-font-weight: bold;"/>
+
+            <HBox spacing="10">
+
+                <Button text="Start Training"
+                        onAction="#startTraining"/>
+
+                <Button text="Stop Training"
+                        onAction="#cancelTraining"/>
+
+            </HBox>
+
+        </VBox>
+    </top>
+
+    <center>
+
+        <GridPane hgap="10"
+                  vgap="10">
+
+            <columnConstraints>
+                <ColumnConstraints percentWidth="50"/>
+                <ColumnConstraints percentWidth="50"/>
+            </columnConstraints>
+
+            <VBox GridPane.rowIndex="0"
+                  GridPane.columnIndex="0">
+
+                <Label text="Training Status"/>
+
+                <Label fx:id="epochLabel"/>
+                <Label fx:id="gamesLabel"/>
+                <Label fx:id="statusLabel"/>
+
+                <ProgressBar fx:id="trainingProgress"/>
+            </VBox>
+
+            <VBox GridPane.rowIndex="0"
+                  GridPane.columnIndex="1">
+
+                <Label text="Model Health"/>
+
+                <Label fx:id="cumulativeWinRateLabel"/>
+                <Label fx:id="evaluationWinRateLabel"/>
+                <Label fx:id="lossLabel"/>
+                <Label fx:id="learningRateLabel"/>
+
+            </VBox>
+
+            <LineChart fx:id="accuracyChart"
+                       GridPane.rowIndex="1"
+                       GridPane.columnIndex="0">
+
+                <xAxis>
+                    <NumberAxis label="Epoch"/>
+                </xAxis>
+
+                <yAxis>
+                    <NumberAxis label="Cumulative win rate (%)"/>
+                </yAxis>
+
+            </LineChart>
+
+            <LineChart fx:id="winRateChart"
+                       GridPane.rowIndex="1"
+                       GridPane.columnIndex="1">
+
+                <xAxis>
+                    <NumberAxis label="Epoch"/>
+                </xAxis>
+
+                <yAxis>
+                    <NumberAxis label="Recent win rate (%)"/>
+                </yAxis>
+
+            </LineChart>
+
+            <VBox GridPane.rowIndex="2"
+                  GridPane.columnSpan="2">
+
+                <Label text="Board State"/>
+
+                <HBox fx:id="boardContainer"
+                      spacing="5"/>
+            </VBox>
+
+            <VBox GridPane.rowIndex="3"
+                  GridPane.columnSpan="2">
+
+                <Label text="AI Decision"/>
+
+                <Label fx:id="predictedMoveLabel"/>
+                <Label fx:id="confidenceLabel"/>
+                <Label fx:id="strategyLabel"/>
+
+            </VBox>
+
+        </GridPane>
+
+    </center>
+
+    <bottom>
+
+        <TextArea fx:id="trainingLog"
+                  editable="false"
+                  prefRowCount="10"/>
+
+    </bottom>
+
+</BorderPane>
